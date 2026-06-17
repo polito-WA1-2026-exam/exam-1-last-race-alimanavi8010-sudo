@@ -56,7 +56,8 @@
 
 ## Screenshots
 
-*(Add after running the app)*
+![Planning Phase](screenshots/planning.png)
+![Global Ranking](screenshots/ranking.png)
 
 ## User Credentials
 
