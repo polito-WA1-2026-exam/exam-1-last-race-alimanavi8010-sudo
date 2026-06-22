@@ -132,34 +132,45 @@ export function initializeDatabase() {
 
       // Each array below is [stationId, positionOnLine].
       // Consecutive positions on the SAME line = a valid segment.
+      //
+      // DESIGN NOTE: I deliberately kept most lines mostly "exclusive" —
+      // touching the shared network only at FOUR hub stations (Monte Grappa,
+      // Porta Susa, Vinzaglio, Lingotto). This satisfies the spec's rule
+      // that interchange stations cannot exceed half the total (4 out of
+      // 16 here, well under the 8-station limit), while still giving every
+      // line at least one connection point into the rest of the network.
 
-      // Linea 1 (id=1): Fermi -> Paradiso -> Massaua -> Pozzo Strada ->
-      //   Monte Grappa -> Rivoli -> Raffaello Sanzio -> Porta Susa ->
-      //   Vinzaglio -> Re Umberto -> Porta Nuova -> Nizza -> Lingotto -> Bengasi
-      ;[[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[9,9],[10,10],[11,11],[12,12],[13,13],[14,14]]
+      // Linea 1 (id=1): a long line — its own 10 stations, sharing two of
+      // them (Monte Grappa, Porta Susa) with other lines.
+      // Fermi -> Paradiso -> Massaua -> Pozzo Strada -> Monte Grappa ->
+      //   Rivoli -> Raffaello Sanzio -> Porta Susa -> Vinzaglio -> Re Umberto
+      ;[[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[9,9],[10,10]]
         .forEach(([sid, pos]) => insertLS.run(1, sid, pos))
 
-      // Linea 2 (id=2): Porta Susa -> Re Umberto -> Porta Nuova -> Piazza Vittorio -> Gran Madre
-      ;[[8,1],[10,2],[11,3],[15,4],[16,5]]
+      // Linea 2 (id=2): branches off the Porta Susa hub only.
+      // Porta Susa -> Porta Nuova -> Nizza
+      ;[[8,1],[11,2],[12,3]]
         .forEach(([sid, pos]) => insertLS.run(2, sid, pos))
 
-      // Linea 3 (id=3): Monte Grappa -> Porta Susa -> Vinzaglio -> Lingotto -> Piazza Vittorio
-      ;[[5,1],[8,2],[9,3],[13,4],[15,5]]
+      // Linea 3 (id=3): branches off the Monte Grappa hub, also touches Lingotto.
+      // Monte Grappa -> Lingotto -> Bengasi
+      ;[[5,1],[13,2],[14,3]]
         .forEach(([sid, pos]) => insertLS.run(3, sid, pos))
 
-      // Linea 4 (id=4): Re Umberto -> Porta Nuova -> Nizza -> Lingotto -> Bengasi
-      ;[[10,1],[11,2],[12,3],[13,4],[14,5]]
+      // Linea 4 (id=4): branches off the Lingotto hub only.
+      // Lingotto -> Piazza Vittorio -> Gran Madre
+      ;[[13,1],[15,2],[16,3]]
         .forEach(([sid, pos]) => insertLS.run(4, sid, pos))
 
-      // Linea 5 (id=5): Massaua -> Monte Grappa -> Porta Susa -> Re Umberto -> Gran Madre
-      ;[[3,1],[5,2],[8,3],[10,4],[16,5]]
+      // Linea 5 (id=5): a short line, branches off the Porta Susa hub.
+      // Porta Susa -> Vinzaglio
+      ;[[8,1],[9,2]]
         .forEach(([sid, pos]) => insertLS.run(5, sid, pos))
 
-      // Because Porta Susa, Re Umberto, Porta Nuova, Monte Grappa, Vinzaglio,
-      // Lingotto, Piazza Vittorio and Gran Madre each appear under MORE than
-      // one line_id above, they automatically become interchange stations —
-      // I never had to "flag" them manually, it's derived from this data
-      // (see getInterchangeStations() below).
+      // Result: Monte Grappa, Porta Susa, Vinzaglio and Lingotto are the
+      // ONLY interchange stations (4 out of 16 total) — comfortably within
+      // the "no more than half" limit, while still satisfying the "at
+      // least 3 interchanges" minimum.
 
       // 12 random events, effect between -4 and +4 (spec requirement).
       // I wrote these descriptions myself rather than copying the ones
