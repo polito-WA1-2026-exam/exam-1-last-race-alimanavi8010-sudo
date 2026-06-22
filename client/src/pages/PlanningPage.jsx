@@ -57,9 +57,23 @@ function PlanningPage({ gameData, setGameData }) {
   const stationById = {}
   for (const line of network) for (const st of line.stations) stationById[st.id] = st.name
 
+  // Build the set of segments already used in the current route
+  // (normalized so direction doesn't matter), once per render.
+  const usedSegmentKeys = new Set()
+  for (let i = 0; i < route.length - 1; i++) {
+    const a = route[i], b = route[i + 1]
+    usedSegmentKeys.add([Math.min(a, b), Math.max(a, b)].join('-'))
+  }
+  const isSegmentUsed = (seg) => {
+    const key = [Math.min(seg.stationA.id, seg.stationB.id), Math.max(seg.stationA.id, seg.stationB.id)].join('-')
+    return usedSegmentKeys.has(key)
+  }
+
   const currentStationId = route[route.length - 1]
+  // "Reachable" now means: touches the current station AND hasn't been used yet.
   const reachableSegments = segments.filter(seg =>
-    seg.stationA.id === currentStationId || seg.stationB.id === currentStationId
+    (seg.stationA.id === currentStationId || seg.stationB.id === currentStationId) &&
+    !isSegmentUsed(seg)
   )
 
   const handleSegmentClick = (seg) => {
@@ -71,16 +85,6 @@ function PlanningPage({ gameData, setGameData }) {
     }
     setDisconnected(false)
     const nextId = seg.stationA.id === currentStationId ? seg.stationB.id : seg.stationA.id
-
-    // Per final spec: segments cannot be repeated, but stations can be revisited
-    const segKey = [Math.min(currentStationId, nextId), Math.max(currentStationId, nextId)].join('-')
-    const usedSegments = new Set()
-    for (let i = 0; i < route.length - 1; i++) {
-      const a = route[i], b = route[i+1]
-      usedSegments.add([Math.min(a,b), Math.max(a,b)].join('-'))
-    }
-    if (usedSegments.has(segKey)) return
-
     setRoute(prev => [...prev, nextId])
   }
 
@@ -150,15 +154,7 @@ function PlanningPage({ gameData, setGameData }) {
               <p className='text-muted small mb-2'><strong>Green = reachable</strong> from current position. Click to add.</p>
               {segments.map((seg, idx) => {
                 const isReachable = reachableSegments.includes(seg)
-                // A segment is "used" if it appears consecutively in the route
-                const alreadyUsed = (() => {
-                  for (let i = 0; i < route.length - 1; i++) {
-                    const a = route[i], b = route[i+1]
-                    if ((a === seg.stationA.id && b === seg.stationB.id) ||
-                        (a === seg.stationB.id && b === seg.stationA.id)) return true
-                  }
-                  return false
-                })()
+                const alreadyUsed = isSegmentUsed(seg)
                 return (
                   <div key={idx} onClick={() => handleSegmentClick(seg)} style={{
                     cursor: submitted ? 'default' : 'pointer',
